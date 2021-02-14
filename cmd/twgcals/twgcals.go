@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -115,9 +114,23 @@ func main() {
 					date = item.Start.Date
 				}
 				enddate := item.End.DateTime
-				task := fmt.Sprintf("project:%s %v due:%v until:%v rc.dateformat:Y-M-DTH:N:SZ\n", project, item.Summary, date, enddate)
+				const COUNTSEL = 0
+				const DESCSEL = 1
+				const ADDCMD = 2
+				const PROJSEL = 3
+				const DUESEL = 4
+				taskparts := []string{
+					"count",
+					fmt.Sprintf("desc:'%s'", item.Summary),
+					"add",
+					fmt.Sprintf("project:%s", project),
+					fmt.Sprintf("due:%v", date),
+					fmt.Sprintf("until:%v", enddate),
+					"rc.dateformat:Y-M-DTH:N:SZ",
+					item.Summary,
+				}
 
-				cmd := exec.Command("task", fmt.Sprintf("project:%s", project), fmt.Sprintf("desc:'%s'", item.Summary), fmt.Sprintf("due:%v", date), "count")
+				cmd := exec.Command("task", taskparts[PROJSEL], taskparts[DUESEL], taskparts[DESCSEL], taskparts[COUNTSEL])
 				stdout, err := cmd.Output()
 				if err != nil {
 					log.Fatal(err)
@@ -127,8 +140,7 @@ func main() {
 					log.Fatal(err)
 				}
 				if count == 0 {
-					taslparts := strings.Split("add "+task, " ")
-					taskadd := exec.Command("task", taslparts...)
+					taskadd := exec.Command("task", taskparts[ADDCMD:]...)
 					err = taskadd.Run()
 					if err != nil {
 						log.Fatal(err)
