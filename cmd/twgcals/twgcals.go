@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -128,7 +129,16 @@ func main() {
 					fmt.Sprintf("until:%v", enddate),
 					"rc.dateformat:Y-M-DTH:N:SZ",
 					item.Summary,
+					"+twgcals",
 				}
+				// Add tags from calendar name
+				// Please name your calendar project.subproj
+				// F.ex work.client
+				tags := []string{}
+				for _, tag := range strings.Split(project, ".") {
+					tags = append(tags, "+"+tag)
+				}
+				taskparts = append(taskparts, tags...)
 
 				cmd := exec.Command("task", taskparts[PROJSEL], taskparts[DUESEL], taskparts[DESCSEL], taskparts[COUNTSEL])
 				stdout, err := cmd.Output()
