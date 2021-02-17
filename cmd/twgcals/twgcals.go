@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -74,7 +75,11 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func main() {
-	b, err := ioutil.ReadFile("credentials.json")
+	user, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadFile(filepath.Join(user, "credentials.json"))
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
@@ -110,11 +115,22 @@ func main() {
 		}
 		if len(events.Items) > 0 {
 			for _, item := range events.Items {
-				date := item.Start.DateTime
-				if date == "" {
-					date = item.Start.Date
+				loc, err := time.LoadLocation("Local")
+				if err != nil {
+					log.Fatal(err)
 				}
-				enddate := item.End.DateTime
+				parsed, err := time.Parse(time.RFC3339, item.Start.DateTime)
+				if err != nil {
+					log.Fatal(err)
+				}
+				parsed = parsed.In(loc)
+				date := parsed.Format("2006-01-02T15:04:05.999999-07:00")
+				parsed, err = time.Parse(time.RFC3339, item.End.DateTime)
+				if err != nil {
+					log.Fatal(err)
+				}
+				parsed = parsed.In(loc)
+				enddate := parsed.Format("2006-01-02T15:04:05.999999-07:00")
 				const COUNTSEL = 0
 				const DESCSEL = 1
 				const ADDCMD = 2
