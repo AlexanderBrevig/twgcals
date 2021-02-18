@@ -79,7 +79,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	b, err := ioutil.ReadFile(filepath.Join(user, "credentials.json"))
+	credentialPath := filepath.Join(user, "credentials.json")
+	if mp := os.Getenv("TWGCALS_CREDENTIALS"); mp != "" {
+		credentialPath = mp
+	}
+	b, err := ioutil.ReadFile(credentialPath)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
