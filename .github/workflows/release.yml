@@ -1,0 +1,52 @@
+on:
+  push:
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Upload Release Asset
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        go_version: [1.15.x]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go_version }}
+      - name: Test Pre-Publish
+        run: go test ./...
+      - name: Build with xgo
+        uses: crazy-max/ghaction-xgo@v1
+        with:
+          xgo_version: latest
+          go_version: ${{ matrix.go_version }}
+          dest: build
+          prefix: twgcals
+          pkg: cmd/twgcals/twgcals.go
+          targets: windows/386,windows/amd64,linux/386,linux/amd64,darwin/386,darwin/amd64
+          v: true
+          x: false
+          ldflags: -s -w
+          buildmode: default
+      - name: Create Release
+        uses: actions/create-release@v1.0.0
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Assets
+        uses: glentiki/xbin-release-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          assets_path: ./build
